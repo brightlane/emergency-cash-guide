@@ -1,0 +1,13 @@
+{
+  "name": "emergency-cash-guide",
+  "version": "1.0.0",
+  "description": "MaxLend USA Payday Loan Affiliate Empire",
+  "main": "claudio-maxlend.js",
+  "scripts": {
+    "start": "node claudio-maxlend.js",
+    "deploy": "node claudio-maxlend.js && git add . && git commit -m 'MaxLend deploy' && git push"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
