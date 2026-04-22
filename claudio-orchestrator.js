@@ -1,103 +1,122 @@
-const fs = require('fs');
-const path = require('path');
-const yaml = require('yaml');
+# Claudio's 20-Agent Empire Blueprint v1.6 (GLOBAL)
+# HyperAgent Architecture - 4 Teams, 20 Specialized Agents
 
-const BLUEPRINT_PATH = path.join(__dirname, 'output', 'blueprint.full.yaml');
+orchestrator:
+  name: Claudio
+  id: agent-0
+  role: HYPERAGENT ORCHESTRATOR
+  executionFlow:
+    daily:
+      - "Agent-1 scans keywords → Agent-2 classifies"
+      - "Agent-3 architects → Agent-4 writes → Agent-5 optimizes"
+      - "Agent-6 translates top 20% pages"
+      - "Agent-7 fetches PAAPI → Agent-8 validates → Agent-9 builds"
+      - "Agent-12 scans routes → Agent-14 builds destinations"
+      - "Agent-16/17 validates → Agent-18 approves → Agent-19 deploys"
+    realtime:
+      - "Agent-10 monitors prices → triggers rebuilds"
+      - "Agent-20 reads analytics → feeds Claudio"
 
-function loadBlueprint() {
-  const raw = fs.readFileSync(BLUEPRINT_PATH, 'utf8');
-  return yaml.parse(raw);
-}
+teams:
+  contentFactory:
+    agents:
+      - id: 1
+        name: Keyword Scout
+        input: global.config.yaml
+        output: keywords.json
+        sources: ["amazon", "skyscanner", "google-trends"]
+      - id: 2
+        name: Intent Classifier
+        input: keywords.json
+        output: intents.json
+      - id: 3
+        name: Content Architect
+        input: intents.json
+        output: outlines.json
+      - id: 4
+        name: Article Writer
+        input: outlines.json
+        output: articles-raw.json
+      - id: 5
+        name: SEO Optimizer
+        input: articles-raw.json
+        output: articles-optimized.json
+      - id: 6
+        name: Multilingual Translator
+        input: articles-optimized.json
+        output: articles-multilingual.json
+        languages: ["en", "de", "fr", "es"]
 
-function log(step, msg) {
-  const stamp = new Date().toISOString();
-  console.log(`[${stamp}] [${step}] ${msg}`);
-}
+  productEngine:
+    agents:
+      - id: 7
+        name: PAAPI Fetcher
+        input: global.config.yaml
+        output: products-raw.json
+        api: amazon-paapi
+      - id: 8
+        name: Product Validator
+        input: products-raw.json
+        output: products-valid.json
+      - id: 9
+        name: ASIN Page Builder
+        input: products-valid.json
+        output: product-pages.json
+      - id: 10
+        name: Price Monitor
+        input: products-valid.json
+        output: price-changes.json
+        cron: "*/15 * * * *"
+      - id: 11
+        name: Product Ranker
+        input: products-valid.json
+        output: category-pages.json
 
-function runAgent(id, name, action) {
-  log(id, `${name} started`);
-  const result = action();
-  log(id, `${name} finished`);
-  return result;
-}
+  travelIntelligence:
+    agents:
+      - id: 12
+        name: Route Scanner
+        input: global.config.yaml
+        output: routes.json
+        api: skyscanner
+      - id: 13
+        name: Event Detector
+        input: routes.json
+        output: events.json
+        sources: ["world-cup", "holidays", "trends"]
+      - id: 14
+        name: Destination Builder
+        input: routes.json, events.json
+        output: destinations.json
+      - id: 15
+        name: Travel Linker
+        input: destinations.json, products-valid.json
+        output: cross-links.json
 
-function scanKeywords() {
-  return runAgent('Agent-1', 'Keyword Scout', () => ({
-    keywords: ['amazon deals', 'travel offers', 'best products', 'loan alternatives']
-  }));
-}
+  productionLine:
+    agents:
+      - id: 16
+        name: HTML Validator
+        input: "*.json"
+        output: validation-report.json
+      - id: 17
+        name: Link Checker
+        input: "*.html"
+        output: link-report.json
+      - id: 18
+        name: Deploy Guard
+        input: validation-report.json, link-report.json
+        output: deploy-approval.json
+      - id: 19
+        name: Sitemap Generator
+        input: deploy-approval.json
+        output: sitemap.xml, robots.txt
+      - id: 20
+        name: Analytics Reader
+        input: google-analytics
+        output: performance.json
 
-function classifyIntent(keywords) {
-  return runAgent('Agent-2', 'Intent Classifier', () =>
-    keywords.map(k => ({ keyword: k, stage: 'mid-funnel' }))
-  );
-}
-
-function buildOutlines(intents) {
-  return runAgent('Agent-3', 'Content Architect', () =>
-    intents.map(item => ({ keyword: item.keyword, outline: `Outline for ${item.keyword}` }))
-  );
-}
-
-function writeArticles(outlines) {
-  return runAgent('Agent-4', 'Article Writer', () =>
-    outlines.map(item => ({ keyword: item.keyword, content: `Article content for ${item.keyword}` }))
-  );
-}
-
-function optimizeSEO(pages) {
-  return runAgent('Agent-5', 'SEO Optimizer', () =>
-    pages.map(page => ({ ...page, titleTag: `Best ${page.keyword}`, schema: true }))
-  );
-}
-
-function translateTopPages(pages) {
-  return runAgent('Agent-6', 'Multilingual Translator', () =>
-    pages.slice(0, Math.ceil(pages.length * 0.2)).map(page => ({
-      ...page,
-      translations: ['de', 'es', 'fr']
-    }))
-  );
-}
-
-function validateHTML(pages) {
-  return runAgent('Agent-16', 'HTML Validator', () => pages.length);
-}
-
-function checkLinks(pages) {
-  return runAgent('Agent-17', 'Link Checker', () => pages.length);
-}
-
-function deployGuard() {
-  return runAgent('Agent-18', 'Deploy Guard', () => true);
-}
-
-function generateSitemap(pages) {
-  return runAgent('Agent-19', 'Sitemap Generator', () => pages.length);
-}
-
-function readAnalytics() {
-  return runAgent('Agent-20', 'Analytics Reader', () => ({ traffic: 'pending' }));
-}
-
-function main() {
-  const blueprint = loadBlueprint();
-  log('Agent-0', `Claudio loaded blueprint: ${blueprint?.claudioFlow ? 'ok' : 'missing'}`);
-
-  const keywords = scanKeywords();
-  const intents = classifyIntent(keywords.keywords);
-  const outlines = buildOutlines(intents);
-  const articles = writeArticles(outlines);
-  const optimized = optimizeSEO(articles);
-  const translated = translateTopPages(optimized);
-
-  validateHTML(optimized);
-  checkLinks(optimized);
-  deployGuard();
-  generateSitemap(optimized);
-  readAnalytics();
-
-  log('Agent-0', `Empire run complete: ${optimized.length} pages optimized, ${translated.length} translated batches`);
-}
-
-main();
+globalConfig: "global.config.yaml"
+outputDir: "./output"
+deployDir: "./public"
+parallelTeams: 4
