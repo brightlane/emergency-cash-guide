@@ -1,0 +1,25 @@
+# blueprint.maxlend.yaml – MaxLend USA Payday Loan Empire
+version: "1.7"
+
+product:
+  name: "MaxLend"
+  affiliateLink: "https://www.linkconnector.com/ta.php?lc=007949096598005765&atid=MaxlendT"
+  loans: "$100-$3750"
+  audience: "Bad credit, emergency cash"
+
+keywords:
+  emergency:
+    - "emergency loans no credit check"
+    - "cash today bad credit"
+    - "500 dollar loan same day"
+    - "1000 dollar loan bad credit"
+  maxlend:
+    - "maxlend review"
+    - "maxlend apply"
+    - "maxlend login"
+
+pageTemplates:
+  emergency:
+    title: "{keyword} | Bad Credit OK | Same Day"
+    h1: "Get {keyword} → FICO 520 Approved"
+    cta: "Apply MaxLend → Funds Tomorrow"
