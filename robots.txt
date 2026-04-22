@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://YOURUSERNAME.github.io/YOURREPO/sitemap.xml
+Sitemap: https://brightlane.github.io/emergency-cash-guide/sitemap.xml
