@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Empire Speed Monitor</title></head>
+<body>
+  <h1>⚡ Claudio Speed Dashboard</h1>
+  <div id="metrics"></div>
+  <script>
+    fetch('/speed-report.json').then(r=>r.json()).then(data => {
+      document.getElementById('metrics').innerHTML = \`
+        <h2>Live Stats</h2>
+        <p>Avg Build: \${data.avgBuildTime.toFixed(1)}s</p>
+        <p>Pages/min: \${data.pagesPerMinute.toFixed(0)}</p>
+        <p>Timeout Risk: \${data.timeoutRisk.toFixed(0)}%</p>
+        <p>Status: \${data.githubStatus === 'green' ? '🟢 LIVE' : '🔴 ISSUE'}</p>
+      \`;
+    });
+  </script>
+</body>
+</html>
