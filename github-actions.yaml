@@ -1,0 +1,45 @@
+# .github/workflows/claudio-empire.yml
+name: Claudio MaxLend Empire
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily 9AM UTC
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches: [ main ]
+
+jobs:
+  empire-run:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run Claudio FULL EMPIRE
+      run: |
+        chmod +x claudio-orchestrator.js
+        ./claudio-orchestrator.js --full-empire
+        
+    - name: Deploy to GitHub Pages
+      run: |
+        git config user.name "Claudio Bot"
+        git config user.email "claudio@brightlane.ai"
+        git add public/
+        git add output/
+        git commit -m "Claudio Empire: $(date +%Y-%m-%d) - $(ls public/*.html | wc -l) pages" || true
+        git push
+        
+    - name: Notify success
+      run: |
+        echo "🚀 Empire deployed: https://brightlane.github.io/emergency-cash-guide/"
+        echo "📊 Pages: $(ls public/*.html | wc -l)"
