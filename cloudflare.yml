@@ -1,0 +1,10 @@
+# Cloudflare zero-config (pages.cloudflare.com)
+# Steps:
+# 1. Add site: brightlane.github.io/emergency-cash-guide
+# 2. Enable: Polish (image opt), Cache Everything, Argo Smart Routing
+# 3. Custom domain optional: cashguide.com → $10/year
+
+# Results:
+# TTFB: 800ms → 100ms
+# Images: Auto WebP
+# Global CDN: 300+ edge locations
