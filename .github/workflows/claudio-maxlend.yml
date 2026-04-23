@@ -1,0 +1,54 @@
+name: Claudio MaxLend Nonstop
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # every 15 minutes
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: claudio-maxlend
+  cancel-in-progress: true
+
+jobs:
+  blueprint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install
+        run: npm ci
+        
+      - name: Claudio Orchestrator
+        run: node output/claudio-orchestrator.js
+        
+      - name: Task Runner (Agents)
+        run: node output/task-runner.js
+        
+      - name: Generate Sitemap
+        run: node output/generate-sitemap.js
+        
+      - name: Upload Site Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: output/site/
+          
+  deploy:
+    needs: blueprint
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs
