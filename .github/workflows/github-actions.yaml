@@ -5,7 +5,6 @@ on:
     - cron: "*/30 * * * *"
   workflow_dispatch:
 
-# Prevent multiple overlapping runs (important for 30-min automation)
 concurrency:
   group: claudio-empire-pipeline
   cancel-in-progress: false
@@ -25,26 +24,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          # ❌ removed npm cache because no lockfile exists
 
-      - name: Install dependencies
+      - name: Install dependencies (safe mode)
         run: |
           if [ -f package.json ]; then
             npm install
           else
-            echo "No package.json found, skipping install"
+            echo "No package.json found — skipping install"
           fi
 
-      - name: Run article pipeline
+      - name: Run pipeline
         run: |
           if [ -f article-pipeline.js ]; then
             node article-pipeline.js
           else
-            echo "article-pipeline.js not found - skipping"
+            echo "ERROR: article-pipeline.js not found"
             exit 1
           fi
 
-      - name: Commit generated changes (if any)
+      - name: Commit changes (if any)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
