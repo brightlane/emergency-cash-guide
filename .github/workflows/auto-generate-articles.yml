@@ -9,7 +9,45 @@ permissions:
 
 jobs:
   build:
+    runs-on: ubuntu-latestname: Auto Generate Articles
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Generate articles
+        run: |
+          mkdir -p articles
+
+          for i in {1..3}; do
+            FILE="articles/article-$(date +%s)-$i.md"
+            echo "# Emergency Cash Article $i" > $FILE
+            echo "" >> $FILE
+            echo "This is an auto-generated article about emergency cash strategies." >> $FILE
+            echo "More content can be expanded here for SEO and readability." >> $FILE
+          done
+
+      - name: Commit and push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add articles/
+
+          git commit -m "Auto-generate articles [skip ci]" || exit 0
+
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
     steps:
       - uses: actions/checkout@v4
