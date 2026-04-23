@@ -1,128 +1,78 @@
 #!/usr/bin/env node
-
-/**
- * V99 SOCIAL MEDIA ENGINE
- * - Generates high-quality social posts
- * - Hooks into affiliate links
- * - Clusters messaging per platform
- * - Builds ready-to-post content packs
- * - Outputs JSON + HTML dashboard
- */
-
 const fs = require("fs");
 const path = require("path");
 
-const OUTPUT = path.join(process.cwd(), "output");
-const SOCIAL = path.join(OUTPUT, "social");
+const OUT = path.join(process.cwd(), "social-posts");
+fs.mkdirSync(OUT, { recursive: true });
 
-fs.mkdirSync(SOCIAL, { recursive: true });
+// 🔗 affiliate link
+const LINK =
+  "https://www.linkconnector.com/ta.php?lc=007949096598005765&atid=MaxlendeMergency";
 
-// 🔗 AFFILIATE LINKS (YOUR REAL ONES)
-const LINKS = {
-  maxlend: "https://www.linkconnector.com/ta.php?lc=007949096598005765&atid=MaxlendeMergency",
-  sanebox: "https://try.sanebox.com/efdrajzfvk2c"
-};
-
-// 🧠 CONTENT CORE (edit/expand anytime)
-const TOPICS = [
-  {
-    brand: "MaxLend",
-    angle: "emergency cash solutions",
-    affiliate: LINKS.maxlend,
-    tone: "urgent-helpful"
-  },
-  {
-    brand: "SaneBox",
-    angle: "email inbox overload fix",
-    affiliate: LINKS.sanebox,
-    tone: "productivity-educational"
-  }
+// 🧠 content themes (rotate daily)
+const topics = [
+  "emergency cash loans explained",
+  "fast loan approval tips",
+  "bad credit loan options",
+  "how to get quick funding",
+  "smart borrowing strategies"
 ];
 
-// 🔥 POST GENERATOR (V99 QUALITY ENGINE)
-function generatePosts(item) {
-  const link = item.affiliate;
+// 🎯 pick “daily theme” (stable daily rotation)
+const dayIndex = new Date().getDate();
+const topic = topics[dayIndex % topics.length];
 
-  const base = {
-    x: [
-      `💡 Struggling with ${item.angle}? Here’s a simple solution many people overlook 👉 ${link}`,
-      `⚡ Fast insight: ${item.angle} doesn’t have to be complicated. This helps simplify it 👉 ${link}`,
-      `🚀 Real-world breakdown of ${item.angle} and how people are solving it faster 👉 ${link}`
-    ],
+// 🧾 X (Twitter) post
+const xPost = `
+🚨 ${topic.toUpperCase()} 🚨
 
-    reddit: [
-      `I put together a breakdown of ${item.angle} that might help someone: ${link}`,
-      `Not financial advice, but this explains ${item.angle} in a simple way: ${link}`,
-      `Sharing a resource on ${item.angle} that could be useful: ${link}`
-    ],
+When unexpected expenses hit, fast funding options can help bridge the gap.
 
-    linkedin: [
-      `Exploring modern approaches to ${item.angle}. Here's a structured breakdown: ${link}`,
-      `Many professionals struggle with ${item.angle}. This approach simplifies it: ${link}`,
-      `A practical look at improving ${item.angle} workflows: ${link}`
-    ]
-  };
+Learn more here:
+${LINK}
 
-  return base;
-}
+#finance #loans #moneytips
+`.trim();
 
-// 🔥 EXPORT PACK BUILDER
-let outputPack = [];
+// 🧾 Reddit post (longer, more natural)
+const redditPost = `
+Title: ${topic}
 
-TOPICS.forEach(topic => {
-  const posts = generatePosts(topic);
+Many people struggle when unexpected expenses come up.
 
-  outputPack.push({
-    brand: topic.brand,
-    angle: topic.angle,
-    posts
-  });
-});
+This guide explains how short-term lending works and what to watch out for.
 
-// 🔥 SAVE JSON PACK
-fs.writeFileSync(
-  path.join(SOCIAL, "social-pack-v99.json"),
-  JSON.stringify(outputPack, null, 2)
-);
+Key things to understand:
+- Approval speed matters
+- Always review repayment terms
+- Compare multiple options
 
-// 🔥 HTML DASHBOARD (READY COPY/PASTE PANEL)
-const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<title>Social Engine V99 Dashboard</title>
-<style>
-body { font-family: Arial; padding: 20px; }
-.card { border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; }
-textarea { width: 100%; height: 80px; }
-</style>
-</head>
-<body>
+More info here:
+${LINK}
 
-<h1>🚀 Social Media Engine V99</h1>
+(Sharing for informational purposes only)
+`.trim();
 
-${outputPack.map(p => `
-<div class="card">
-  <h2>${p.brand}</h2>
-  <p><b>Topic:</b> ${p.angle}</p>
+// 🧾 LinkedIn post (professional tone)
+const linkedinPost = `
+${topic}
 
-  <h3>X (Twitter)</h3>
-  ${p.posts.x.map(t => `<textarea>${t}</textarea>`).join("")}
+Financial flexibility is important in today’s economy.
 
-  <h3>Reddit</h3>
-  ${p.posts.reddit.map(t => `<textarea>${t}</textarea>`).join("")}
+Short-term lending solutions can provide support during unexpected situations, but should always be used responsibly.
 
-  <h3>LinkedIn</h3>
-  ${p.posts.linkedin.map(t => `<textarea>${t}</textarea>`).join("")}
+Key considerations:
+• Understand total repayment cost
+• Evaluate income stability
+• Avoid unnecessary borrowing cycles
 
-</div>
-`).join("")}
+Learn more:
+${LINK}
+`.trim();
 
-</body>
-</html>
-`;
+// write files
+fs.writeFileSync(path.join(OUT, "x-post.txt"), xPost);
+fs.writeFileSync(path.join(OUT, "reddit-post.txt"), redditPost);
+fs.writeFileSync(path.join(OUT, "linkedin-post.txt"), linkedinPost);
 
-fs.writeFileSync(path.join(SOCIAL, "dashboard.html"), html);
-
-console.log("✅ V99 SOCIAL ENGINE COMPLETE");
-console.log("Posts generated:", outputPack.length);
+console.log("✅ Daily social posts generated");
