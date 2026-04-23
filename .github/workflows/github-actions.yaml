@@ -1,60 +1,39 @@
-name: Claudio Empire Pipeline
+name: Auto Generate Articles
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
-  workflow_dispatch:
-
-concurrency:
-  group: claudio-empire-pipeline
-  cancel-in-progress: false
+    - cron: "*/5 * * * *"  # every 5 minutes
+  workflow_dispatch:       # allow manual trigger
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
-      - name: Ensure output directory + queue file exists
-        run: |
-          mkdir -p output
+      - name: Install dependencies
+        run: npm install
 
-          if [ ! -f output/article-queue.json ]; then
-            echo "Creating missing article queue file..."
-            echo '[]' > output/article-queue.json
-          fi
-
-      - name: Install dependencies (if any)
-        run: |
-          if [ -f package.json ]; then
-            npm install
-          else
-            echo "No package.json found - skipping install"
-          fi
-
-      - name: Run pipeline
+      - name: Run article pipeline
         run: node article-pipeline.js
 
-      - name: Commit changes
+      - name: Commit & push if changed
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions@users.noreply.github.com"
 
-          git add -A
+          git add .
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Auto-update content [skip ci]"
+            git commit -m "Auto-generate articles [skip ci]"
             git push
           fi
