@@ -1,18 +1,8 @@
 {
-  "name": "claudio-content-empire",
+  "name": "emergency-cash-guide",
   "version": "1.0.0",
-  "description": "Claudio's nonstop article generation empire with scheduled batch processing.",
-  "main": "claudio-orchestrator.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
-    "start": "node claudio-orchestrator.js --full-empire",
-    "orchestrate": "node claudio-orchestrator.js --full-empire",
-    "pipeline": "node article-pipeline.js",
-    "generate:article": "node article-generator.js",
-    "validate": "node claudio-orchestrator.js --validate-only",
-    "batch": "npm run pipeline && npm run orchestrate"
-  },
-  "dependencies": {
-    "yaml": "^2.5.1"
-  }
-}
+    "claudio": "node output/claudio-orchestrator.js",
+    "tasks": "node output/task-runner.js",
+    "sitemap": "
