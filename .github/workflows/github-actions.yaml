@@ -3,7 +3,10 @@ name: Auto Generate Articles
 on:
   schedule:
     - cron: "*/5 * * * *"  # every 5 minutes
-  workflow_dispatch:       # allow manual trigger
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -12,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,13 +32,15 @@ jobs:
       - name: Commit & push if changed
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           git add .
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
-          else
-            git commit -m "Auto-generate articles [skip ci]"
-            git push
+            exit 0
           fi
+
+          git commit -m "Auto-generate articles [skip ci]"
+
+          git push origin HEAD:main
