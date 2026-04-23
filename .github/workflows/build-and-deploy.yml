@@ -1,0 +1,105 @@
+name: Build and Deploy SEO Site
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # allows manual runs
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (if any)
+        run: |
+          if [ -f package.json ]; then
+            npm install || true
+          fi
+
+      # ---------------------------
+      # CORE CONTENT PIPELINE
+      # ---------------------------
+
+      - name: Classify intent
+        run: node intent-classifier.js || true
+
+      - name: Build content architecture
+        run: node content-architect.js || true
+
+      - name: Generate articles
+        run: node article-generator.js || true
+
+      - name: Run article pipeline
+        run: node article-pipeline.js || true
+
+      # ---------------------------
+      # SEO + OPTIMIZATION
+      # ---------------------------
+
+      - name: SEO optimization
+        run: node seo-optimizer.js || true
+
+      - name: Geo optimization
+        run: node geo-content-optimizer.js || true
+
+      # ---------------------------
+      # VALIDATION (IMPORTANT)
+      # ---------------------------
+
+      - name: Validate HTML
+        run: node html-validator.js || true
+
+      - name: Check links
+        run: node link-checker.js || true
+
+      - name: Content quality audit
+        run: node content-quality-auditor.js || true
+
+      # ---------------------------
+      # SITEMAP + FINALIZE
+      # ---------------------------
+
+      - name: Generate sitemap
+        run: node sitemap-generator.js || true
+
+      - name: Precompress assets
+        run: node precompress.js || true
+
+      # ---------------------------
+      # PREPARE DEPLOY
+      # ---------------------------
+
+      - name: Prepare output directory
+        run: |
+          mkdir -p public
+          cp -r output/* public/ || cp -r . public/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
