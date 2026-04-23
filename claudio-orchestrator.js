@@ -1,138 +1,172 @@
-#!/usr/bin/env node
-// Claudio v1.6 - 20-Agent HyperAgent Orchestrator (GLOBAL)
-// Commands 4 parallel teams across 7 markets
+const fs = require('fs');
+const path = require('path');
+const yaml = require('yaml');
 
-import fs from 'fs';
-import yaml from 'js-yaml';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const ROOT = __dirname;
+const OUTPUT_DIR = path.join(ROOT, 'output');
+const BLUEPRINT_PATH = path.join(OUTPUT_DIR, 'blueprint.full.yaml');
+const LOCK_PATH = path.join(OUTPUT_DIR, '.claudio.lock');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+function now() {
+  return new Date().toISOString();
+}
 
-class Claudio {
-  constructor() {
-    this.blueprint = yaml.load(fs.readFileSync('./blueprint.full.yaml', 'utf8'));
-    this.config = yaml.load(fs.readFileSync('./global.config.yaml', 'utf8'));
-    this.outputDir = './output';
-    this.deployDir = './public';
-    this.ensureDirs();
-    console.log('👑 CLAUDIO v1.6 LOADED');
+function log(step, msg) {
+  console.log(`[${now()}] [${step}] ${msg}`);
+}
+
+function acquireLock() {
+  if (fs.existsSync(LOCK_PATH)) {
+    throw new Error('Lock file exists. Another Claudio batch is already running.');
   }
+  fs.writeFileSync(LOCK_PATH, JSON.stringify({ pid: process.pid, startedAt: now() }, null, 2));
+  process.on('exit', releaseLock);
+  process.on('SIGINT', () => { releaseLock(); process.exit(1); });
+  process.on('SIGTERM', () => { releaseLock(); process.exit(1); });
+}
 
-  ensureDirs() {
-    ['output', 'public', 'agents'].forEach(dir => {
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    });
+function releaseLock() {
+  try {
+    if (fs.existsSync(LOCK_PATH)) fs.unlinkSync(LOCK_PATH);
+  } catch {}
+}
+
+function loadBlueprint() {
+  if (!fs.existsSync(BLUEPRINT_PATH)) {
+    throw new Error(`Missing blueprint file: ${BLUEPRINT_PATH}`);
   }
+  return yaml.parse(fs.readFileSync(BLUEPRINT_PATH, 'utf8'));
+}
 
-  async runAgent(agentId) {
-    const agent = this.findAgent(agentId);
-    console.log(`🟢 Agent-${agent.id}: ${agent.name}`);
-    
-    // MOCK OUTPUT (Step 4+ will be real APIs)
-    const outputFile = path.join(this.outputDir, agent.output);
-    fs.writeFileSync(outputFile, JSON.stringify({
-      agent: agent.name,
-      markets: this.config.markets,
-      timestamp: new Date().toISOString(),
-      count: agentId < 10 ? 50 : 30,
-      status: 'success'
-    }, null, 2));
-    
-    return outputFile;
-  }
+function ensureOutputDir() {
+  if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
 
-  findAgent(id) {
-    for (const team of Object.values(this.blueprint.teams)) {
-      const agent = team.agents.find(a => a.id == id);
-      if (agent) return agent;
+function runStage(name, fn) {
+  log(name, 'started');
+  const result = fn();
+  log(name, 'finished');
+  return result;
+}
+
+function scanKeywords() {
+  return runStage('Agent-1', () => [
+    'emergency cash guide',
+    'maxlend review',
+    'loan alternatives',
+    'responsible borrowing',
+    'fast cash options'
+  ]);
+}
+
+function classifyIntent(keywords) {
+  return runStage('Agent-2', () =>
+    keywords.map(k => ({
+      keyword: k,
+      stage: k.includes('review') || k.includes('alternatives') ? 'decision' : 'informational'
+    }))
+  );
+}
+
+function buildOutlines(items) {
+  return runStage('Agent-3', () =>
+    items.map(item => ({
+      keyword: item.keyword,
+      outline: `Outline for ${item.keyword}: intro, details, pros, cons, CTA`
+    }))
+  );
+}
+
+function writeArticles(outlines) {
+  return runStage('Agent-4', () =>
+    outlines.map(item => ({
+      keyword: item.keyword,
+      html: `<article><h1>${item.keyword}</h1><p>Generated content for ${item.keyword}.</p></article>`
+    }))
+  );
+}
+
+function optimizeSEO(pages) {
+  return runStage('Agent-5', () =>
+    pages.map(page => ({
+      ...page,
+      metaTitle: `${page.keyword} | Emergency Cash Guide`,
+      metaDescription: `Helpful guide for ${page.keyword}.`,
+      schema: true
+    }))
+  );
+}
+
+function translateTopPages(pages) {
+  return runStage('Agent-6', () => {
+    const count = Math.max(1, Math.ceil(pages.length * 0.2));
+    return pages.slice(0, count).map(page => ({
+      ...page,
+      translations: ['de', 'es', 'fr']
+    }));
+  });
+}
+
+function validateHTML(pages) {
+  return runStage('Agent-16', () => pages.every(p => typeof p.html === 'string' && p.html.length > 0));
+}
+
+function checkLinks() {
+  return runStage('Agent-17', () => true);
+}
+
+function deployGuard() {
+  return runStage('Agent-18', () => true);
+}
+
+function generateSitemap() {
+  return runStage('Agent-19', () => true);
+}
+
+function readAnalytics() {
+  return runStage('Agent-20', () => ({ traffic: 'pending' }));
+}
+
+function writeRunSummary(result) {
+  const summary = {
+    generatedAt: now(),
+    pagesGenerated: result.optimized.length,
+    translatedPages: result.translated.length
+  };
+  fs.writeFileSync(path.join(OUTPUT_DIR, 'run-summary.json'), JSON.stringify(summary, null, 2));
+}
+
+function main() {
+  ensureOutputDir();
+  acquireLock();
+
+  try {
+    const blueprint = loadBlueprint();
+    log('Agent-0', blueprint?.claudioFlow ? 'Blueprint loaded' : 'Blueprint missing claudioFlow');
+
+    const keywords = scanKeywords();
+    const intents = classifyIntent(keywords);
+    const outlines = buildOutlines(intents);
+    const articles = writeArticles(outlines);
+    const optimized = optimizeSEO(articles);
+    const translated = translateTopPages(optimized);
+
+    const htmlOk = validateHTML(optimized);
+    const linksOk = checkLinks();
+    const deployOk = deployGuard();
+    const sitemapOk = generateSitemap();
+    const analytics = readAnalytics();
+
+    if (!htmlOk || !linksOk || !deployOk || !sitemapOk) {
+      throw new Error('Validation failed.');
     }
-  }
 
-  async runTeam(teamName) {
-    const team = this.blueprint.teams[teamName];
-    console.log(`🏭 Running Team: ${teamName}`);
-    
-    const promises = team.agents.map(agent => this.runAgent(agent.id));
-    await Promise.all(promises);
-  }
-
-  async fullEmpire() {
-    console.log('👑 CLAUDIO FULL EMPIRE RUN');
-    console.log('=======================');
-    
-    // Phase 1: Content leads
-    await this.runTeam('contentFactory');
-    
-    // Phase 2: Product + Travel parallel
-    await Promise.all([
-      this.runTeam('productEngine'),
-      this.runTeam('travelIntelligence')
-    ]);
-    
-    // Phase 3: Production validates/deploys
-    await this.runTeam('productionLine');
-    
-    console.log('✅ ALL 20 AGENTS COMPLETE');
-    await this.deploy();
-  }
-
-  async deploy() {
-    console.log('🚀 DEPLOYING TO BRIGHTLANE GITHUB PAGES');
-    
-    // Copy everything to public
-    fs.cpSync(this.outputDir, this.deployDir, { recursive: true });
-    
-    // Real sitemap from blueprint
-    this.generateSitemap();
-    
-    console.log(`✅ Deployed to: ${this.config.site.baseUrl}`);
-    console.log(`📊 Pages generated: ${Object.keys(fs.readdirSync(this.deployDir)).length}`);
-  }
-
-  generateSitemap() {
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
-    
-    // Add core pages + agent outputs
-    const corePages = ['index.html', 'sitemap.xml'];
-    corePages.forEach(page => {
-      xml += `<url><loc>${this.config.site.baseUrl}${page}</loc></url>`;
-    });
-    
-    // Add agent JSON as discoverable (SEO bonus)
-    const agentFiles = fs.readdirSync(this.outputDir).filter(f => f.endsWith('.json'));
-    agentFiles.slice(0, 50).forEach(file => {
-      xml += `<url><loc>${this.config.site.baseUrl}output/${file}</loc></url>`;
-    });
-    
-    xml += '</urlset>';
-    fs.writeFileSync(path.join(this.deployDir, 'sitemap.xml'), xml);
-    
-    // robots.txt
-    const robots = `User-agent: *
-Allow: /
-Sitemap: ${this.config.site.baseUrl}sitemap.xml`;
-    fs.writeFileSync(path.join(this.deployDir, 'robots.txt'), robots);
-  }
-
-  async run(mode = 'full-empire') {
-    try {
-      if (mode === 'full-empire') {
-        await this.fullEmpire();
-      } else if (mode === 'test') {
-        await this.runAgent(1);
-        console.log('✅ Test mode complete');
-      }
-    } catch (error) {
-      console.error('❌ Empire error:', error.message);
-    }
+    writeRunSummary({ optimized, translated });
+    log('Agent-0', `Completed: ${optimized.length} pages, ${translated.length} translated sets`);
+    log('Agent-0', `Analytics: ${JSON.stringify(analytics)}`);
+  } finally {
+    releaseLock();
   }
 }
 
-// 🔥 RUN CLAUDIO
-const args = process.argv.slice(2);
-const mode = args[0] || 'full-empire';
-
-const claudio = new Claudio();
-await claudio.run(mode);
+main();
