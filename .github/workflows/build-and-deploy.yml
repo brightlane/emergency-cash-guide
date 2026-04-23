@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "*/10 * * * *"  # every 10 minutes (GitHub minimum-safe interval)
+    - cron: "*/10 * * * *"
 
 permissions:
   contents: read
@@ -30,21 +30,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm install
 
       # -------------------------
-      # CORE GENERATION PIPELINE
+      # SEO PIPELINE
       # -------------------------
 
       - name: Decide what to build
         run: node intent-classifier.js
 
-      - name: Generate small batch of articles
+      - name: Generate articles
         run: node article-generator.js
 
-      - name: Generate page variants
+      - name: Generate pages
         run: node gem-page-generator.js
 
       - name: Optimize SEO
@@ -54,7 +55,7 @@ jobs:
         run: node sitemap-generator.js
 
       # -------------------------
-      # OUTPUT PREP
+      # OUTPUT
       # -------------------------
 
       - name: Prepare site output
