@@ -1,8 +1,16 @@
 {
   "name": "emergency-cash-guide",
   "version": "1.0.0",
-  "private": true,
+  "description": "Continuous SEO Generator",
+  "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node index.js"
-  }
+    "start": "node index.js",
+    "intent": "node intent-classifier.js",
+    "generate": "node article-generator.js",
+    "pages": "node gem-page-generator.js",
+    "seo": "node seo-optimizer.js",
+    "sitemap": "node sitemap-generator.js"
+  },
+  "dependencies": {}
 }
