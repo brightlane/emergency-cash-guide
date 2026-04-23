@@ -1,6 +1,7 @@
 name: Auto Generate Articles
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "*/5 * * * *"
 
@@ -14,16 +15,15 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run generators
         run: |
           mkdir -p articles
 
-          # Example generator output (replace with your real scripts)
+          # Run your existing generator system
           node article-generator.js || true
           node content-architect.js || true
+          node seo-optimizer.js || true
 
       - name: Commit changes
         run: |
@@ -32,10 +32,10 @@ jobs:
 
           git add .
 
-          git diff --cached --quiet && exit 0
+          git diff --cached --quiet && echo "No changes" && exit 0
 
           git commit -m "Auto-generate articles [skip ci]"
 
-      - name: Push changes (FIXED)
+      - name: Push changes (fixed)
         run: |
           git push origin HEAD:main
