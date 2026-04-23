@@ -1,13 +1,18 @@
 {
-  "name": "emergency-cash-guide",
+  "name": "claudio-content-empire",
   "version": "1.0.0",
-  "description": "MaxLend USA Payday Loan Affiliate Empire",
-  "main": "claudio-maxlend.js",
+  "description": "Claudio's nonstop article generation empire with scheduled batch processing.",
+  "main": "claudio-orchestrator.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node claudio-maxlend.js",
-    "deploy": "node claudio-maxlend.js && git add . && git commit -m 'MaxLend deploy' && git push"
+    "start": "node claudio-orchestrator.js --full-empire",
+    "orchestrate": "node claudio-orchestrator.js --full-empire",
+    "pipeline": "node article-pipeline.js",
+    "generate:article": "node article-generator.js",
+    "validate": "node claudio-orchestrator.js --validate-only",
+    "batch": "npm run pipeline && npm run orchestrate"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "yaml": "^2.5.1"
   }
 }
