@@ -1,0 +1,86 @@
+import os
+import csv
+
+# Function to create meta tags and HTML content dynamically for each keyword
+def create_html_page(keyword):
+    # Generate the filename by converting spaces to hyphens and lowercasing
+    filename = keyword.lower().replace(" ", "-").replace(",", "").replace(".", "")  # Clean up the keyword for URL use
+    title = f"{keyword} | Your Guide to {keyword}"
+    description = f"Learn everything you need to know about {keyword}. Get insights, reviews, eligibility details, and more."
+    meta_keywords = f"{keyword}, loan rates, reviews, eligibility, maxlend, roundsky, emergency loans"
+
+    # Create the HTML content
+    html_content = f"""
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="{description}">
+        <meta name="robots" content="index, follow">
+        <meta name="keywords" content="{meta_keywords}">
+        <title>{title}</title>
+        <link rel="canonical" href="https://YOURDOMAIN.com/{filename}.html">
+        <style>
+            body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }}
+            header, footer {{ background-color: #333; color: #fff; padding: 10px; text-align: center; }}
+            .cta-button {{ background-color: #FFCC00; padding: 10px 20px; text-decoration: none; color: #333; border-radius: 5px; }}
+            .cta-button:hover {{ background-color: #e0a800; }}
+            .content {{ padding: 20px; max-width: 1200px; margin: auto; background-color: #fff; }}
+            .section {{ margin-bottom: 20px; }}
+        </style>
+    </head>
+    <body>
+
+    <header>
+        <h1>{title}</h1>
+        <p>Find out everything you need to know about {keyword}.</p>
+    </header>
+
+    <div class="content">
+        <div class="section">
+            <h2>What is {keyword}?</h2>
+            <p>{description}</p>
+        </div>
+
+        <div class="section">
+            <h2>More About {keyword}</h2>
+            <p>Learn about the eligibility, loan terms, and other important information regarding {keyword}.</p>
+        </div>
+
+        <div class="section">
+            <a class="cta-button" href="https://www.linkconnector.com/ta.php?lc=007949096598005765&atid=MaxlendWebTraffic" target="_blank">Check MaxLend Offer</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2023 Emergency Cash Guide - Affiliate disclosure applies to all pages on this site.</p>
+    </footer>
+
+    </body>
+    </html>
+    """
+    return filename, html_content
+
+# Function to read keywords from CSV and generate HTML files
+def generate_html_for_keywords(keywords_file, output_folder):
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+    
+    with open(keywords_file, mode='r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row:
+                keyword = row[0].strip()  # Read the keyword from the file
+                filename, html_content = create_html_page(keyword)
+                # Write the generated HTML content to a file
+                with open(os.path.join(output_folder, f"{filename}.html"), mode='w', encoding='utf-8') as f:
+                    f.write(html_content)
+                print(f"Generated: {filename}.html")
+
+# Path to your CSV file and output directory
+keywords_file = 'keywords.csv'  # Replace this with the path to your CSV file
+output_folder = 'generated_html_pages'  # Folder to save the generated HTML files
+
+# Start the HTML generation process
+generate_html_for_keywords(keywords_file, output_folder)
