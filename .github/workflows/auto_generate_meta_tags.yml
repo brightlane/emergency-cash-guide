@@ -1,0 +1,29 @@
+name: Auto Generate Meta Tags
+
+on:
+  schedule:
+    # This cron expression triggers the workflow every minute
+    - cron: '*/1 * * * *'
+
+jobs:
+  generate_meta_tags:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3
+
+      - name: Run the Meta Tags Generation Script
+        run: |
+          python generate_meta_tags.py  # Ensure the Python script file name matches the actual script
