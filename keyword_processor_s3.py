@@ -6,7 +6,7 @@ import asyncio
 import random
 from botocore.exceptions import ClientError
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
+from retrying import retry
 
 # AWS S3 and SQS Configuration
 S3_BUCKET_NAME = "your-s3-bucket-name"
@@ -36,6 +36,17 @@ for category, terms in keyword_categories.items():
 # AWS Clients Setup
 s3_client = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION)
 sqs_client = boto3.client('sqs', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION)
+
+# Retry decorator to handle retries for failed uploads or processing
+@retry(stop_max_attempt_number=3, wait_fixed=2000)  # Retry up to 3 times, wait 2 seconds between attempts
+def upload_to_s3(file_path):
+    try:
+        with open(file_path, "rb") as file:
+            s3_client.upload_fileobj(file, S3_BUCKET_NAME, file_path)
+            print(f"File {file_path} uploaded successfully to S3.")
+    except ClientError as e:
+        print(f"Error uploading {file_path}: {e}")
+        raise  # Re-raise exception for retrying
 
 # Function to generate content for each keyword
 def generate_content_for_keyword(keyword, batch_number):
@@ -97,17 +108,6 @@ def save_batch_to_csv(batch_number, batch_data):
 
     return batch_filename
 
-# Function to upload to S3 asynchronously using ThreadPoolExecutor
-def upload_to_s3(file_path):
-    try:
-        with open(file_path, "rb") as file:
-            s3_client.upload_fileobj(file, S3_BUCKET_NAME, file_path)
-            print(f"File {file_path} uploaded successfully to S3.")
-    except ClientError as e:
-        print(f"Error uploading {file_path}: {e}")
-        time.sleep(5)  # Retry logic after waiting for a few seconds
-        upload_to_s3(file_path)
-
 # Function to process a batch of keywords and upload to S3
 async def process_batch(batch_number, start_index, end_index):
     batch_data = []
@@ -124,67 +124,18 @@ async def process_batch(batch_number, start_index, end_index):
     await loop.run_in_executor(None, upload_to_s3, batch_filename)
     print(f"Batch {batch_number} processed and uploaded.")
 
-# Function to retrieve and process tasks from the SQS queue
-async def process_sqs_queue():
-    while True:
-        # Fetch messages from the SQS queue
-        messages = sqs_client.receive_message(
-            QueueUrl=SQS_QUEUE_URL,
-            MaxNumberOfMessages=SQS_MAX_MESSAGES,
-            WaitTimeSeconds=20  # Long polling to reduce cost
-        )
-        
-        if 'Messages' in messages:
-            for message in messages['Messages']:
-                task_data = json.loads(message['Body'])
-                
-                batch_number = task_data['batch_number']
-                start_index = task_data['start_index']
-                end_index = task_data['end_index']
-                
-                try:
-                    await process_batch(batch_number, start_index, end_index)
-                    
-                    # Delete the message from the queue after successful processing
-                    sqs_client.delete_message(
-                        QueueUrl=SQS_QUEUE_URL,
-                        ReceiptHandle=message['ReceiptHandle']
-                    )
-                    print(f"Task {batch_number} completed and removed from queue.")
-                except Exception as e:
-                    print(f"Error processing task {batch_number}: {e}")
-                    # Optional: Add retry mechanism or dead-letter queue logic here
-
-# Function to send tasks to SQS queue
-def send_task_to_queue(batch_number, start_index, end_index):
-    task_data = {
-        'batch_number': batch_number,
-        'start_index': start_index,
-        'end_index': end_index
-    }
-    
-    sqs_client.send_message(
-        QueueUrl=SQS_QUEUE_URL,
-        MessageBody=json.dumps(task_data)
-    )
-
-# Function to split tasks into batches and send them to SQS
-def distribute_tasks():
+# Main function to handle the tasks
+async def main():
     total_keywords = len(keywords)
     batch_size = 100  # Number of keywords per batch
     total_batches = total_keywords // batch_size + (1 if total_keywords % batch_size > 0 else 0)
-    
+
     for batch_number in range(1, total_batches + 1):
         start_index = (batch_number - 1) * batch_size
         end_index = min(start_index + batch_size, total_keywords)
         
-        send_task_to_queue(batch_number, start_index, end_index)
-        print(f"Task for batch {batch_number} added to queue.")
-
-# Main function to start the process
-async def main():
-    distribute_tasks()  # Distribute tasks to SQS queue
-    await process_sqs_queue()  # Start processing the queue
+        await process_batch(batch_number, start_index, end_index)
+        print(f"Batch {batch_number} completed.")
 
 if __name__ == "__main__":
     asyncio.run(main())
