@@ -1,76 +1,17 @@
 import os
-import csv
-import boto3
-from datetime import datetime
-from botocore.exceptions import ClientError
+import sys
 
-# ======================
-# AWS CONFIG (FROM GITHUB SECRETS)
-# ======================
+# Ensure the environment variables are set
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
+AWS_REGION = os.getenv('AWS_REGION')
 
-S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
-AWS_REGION = os.environ.get("AWS_REGION")
-
+# Check if the necessary environment variables are provided
 if not S3_BUCKET_NAME or not AWS_REGION:
     raise ValueError("Missing AWS environment variables: S3_BUCKET_NAME or AWS_REGION")
 
-s3_client = boto3.client("s3", region_name=AWS_REGION)
+# Your existing logic here (e.g., interacting with AWS S3)
 
-# ======================
-# DATA
-# ======================
+print(f"S3 Bucket: {S3_BUCKET_NAME}, AWS Region: {AWS_REGION}")
 
-keywords = [
-    "emergency cash help",
-    "fast personal loans",
-    "bad credit loan options",
-    "quick cash advance",
-    "short term financial help",
-    "borrow money online",
-    "urgent loan guide",
-    "instant funding options"
-]
-
-# ======================
-# CSV GENERATION
-# ======================
-
-def generate_csv(file_name):
-    with open(file_name, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Keyword", "Title", "Description"])
-
-        for k in keywords:
-            writer.writerow([
-                k,
-                f"{k.title()} - Guide",
-                f"Learn about {k} and what to consider before applying."
-            ])
-
-    return file_name
-
-# ======================
-# S3 UPLOAD
-# ======================
-
-def upload_to_s3(file_name):
-    try:
-        s3_client.upload_file(file_name, S3_BUCKET_NAME, file_name)
-        print(f"Uploaded → s3://{S3_BUCKET_NAME}/{file_name}")
-    except ClientError as e:
-        raise RuntimeError(f"S3 upload failed: {e}")
-
-# ======================
-# MAIN
-# ======================
-
-def main():
-    file_name = f"meta_tags_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.csv"
-
-    generate_csv(file_name)
-    upload_to_s3(file_name)
-
-    print("Meta tags generated successfully")
-
-if __name__ == "__main__":
-    main()
+# Add the rest of your logic for meta tag generation below
+# For example, fetching files from S3, parsing content, etc.
