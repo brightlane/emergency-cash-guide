@@ -4,9 +4,9 @@ import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
 
-# =========================
-# CONFIG (FROM GITHUB SECRETS)
-# =========================
+# ======================
+# AWS CONFIG (FROM GITHUB SECRETS)
+# ======================
 
 S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
 AWS_REGION = os.environ.get("AWS_REGION")
@@ -14,15 +14,11 @@ AWS_REGION = os.environ.get("AWS_REGION")
 if not S3_BUCKET_NAME or not AWS_REGION:
     raise ValueError("Missing AWS environment variables: S3_BUCKET_NAME or AWS_REGION")
 
-# AWS client (uses GitHub Actions secrets automatically)
-s3_client = boto3.client(
-    "s3",
-    region_name=AWS_REGION
-)
+s3_client = boto3.client("s3", region_name=AWS_REGION)
 
-# =========================
-# KEYWORDS (SAFE DEFAULTS)
-# =========================
+# ======================
+# DATA
+# ======================
 
 keywords = [
     "emergency cash help",
@@ -35,53 +31,46 @@ keywords = [
     "instant funding options"
 ]
 
-# =========================
-# GENERATE CSV FILE
-# =========================
+# ======================
+# CSV GENERATION
+# ======================
 
 def generate_csv(file_name):
     with open(file_name, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-
         writer.writerow(["Keyword", "Title", "Description"])
 
-        for keyword in keywords:
-            title = f"{keyword.title()} - Guide"
-            description = f"Learn about {keyword}, how it works, and key considerations."
-
-            writer.writerow([keyword, title, description])
+        for k in keywords:
+            writer.writerow([
+                k,
+                f"{k.title()} - Guide",
+                f"Learn about {k} and what to consider before applying."
+            ])
 
     return file_name
 
-# =========================
-# UPLOAD TO S3 (SAFE)
-# =========================
+# ======================
+# S3 UPLOAD
+# ======================
 
 def upload_to_s3(file_name):
     try:
-        s3_client.upload_file(
-            file_name,
-            S3_BUCKET_NAME,
-            file_name
-        )
-
-        print(f"Uploaded successfully → s3://{S3_BUCKET_NAME}/{file_name}")
-
+        s3_client.upload_file(file_name, S3_BUCKET_NAME, file_name)
+        print(f"Uploaded → s3://{S3_BUCKET_NAME}/{file_name}")
     except ClientError as e:
         raise RuntimeError(f"S3 upload failed: {e}")
 
-# =========================
-# MAIN EXECUTION
-# =========================
+# ======================
+# MAIN
+# ======================
 
 def main():
-    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    file_name = f"meta_tags_{timestamp}.csv"
+    file_name = f"meta_tags_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.csv"
 
     generate_csv(file_name)
     upload_to_s3(file_name)
 
-    print(f"Success: generated {len(keywords)} meta tags")
+    print("Meta tags generated successfully")
 
 if __name__ == "__main__":
     main()
