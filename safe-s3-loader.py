@@ -1,99 +1,68 @@
-import boto3
-import botocore
-import pandas as pd
-import io
+# safe-s3-loader.py
 import os
-import time
+import csv
 
-# =========================================================
-# SAFE S3 LOADER (FAILSAFE - NEVER CRASHES PIPELINE)
-# =========================================================
+"""
+SAFE MODE LOADER
+- NEVER calls AWS unless explicitly configured
+- Falls back to local CSV files only
+- Prevents EndpointConnectionError completely
+"""
 
-FALLBACK_DATA = pd.DataFrame({
-    "title": ["fallback"],
-    "content": ["S3 unavailable - fallback dataset used"],
-    "status": ["offline_mode"]
-})
+# Optional AWS config (ONLY used if real values exist)
+S3_BUCKET = os.getenv("S3_BUCKET")
+S3_REGION = os.getenv("AWS_REGION")
+
+def is_s3_enabled():
+    return bool(S3_BUCKET and S3_REGION and "your-" not in S3_BUCKET)
 
 
-def safe_log(msg):
-    print(f"[SAFE-S3] {msg}")
-
-
-def load_s3_csv(bucket, key, region="us-east-1", retries=3, use_fallback=True):
+def load_csv(file_name):
     """
-    Robust S3 loader:
-    - retries connection
-    - catches endpoint errors
-    - prevents CI failure
-    - returns fallback DataFrame if needed
+    Priority:
+    1. Local file (always preferred)
+    2. S3 (ONLY if properly configured)
     """
 
-    # Validate inputs early (prevents dumb config crashes)
-    if not bucket or "your-" in bucket:
-        safe_log("INVALID BUCKET CONFIG DETECTED")
-        return FALLBACK_DATA
+    local_path = os.path.join(".", file_name)
 
-    if not key:
-        safe_log("INVALID KEY - returning fallback")
-        return FALLBACK_DATA
+    # ✅ STEP 1: Use local file (SAFE DEFAULT)
+    if os.path.exists(local_path):
+        print(f"[SAFE LOADER] Using local file: {local_path}")
+        with open(local_path, "r", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
 
-    for attempt in range(1, retries + 1):
-        try:
-            safe_log(f"Attempt {attempt} connecting to S3...")
+    # ❌ STEP 2: Block fake S3 config (your current error)
+    if not is_s3_enabled():
+        raise Exception(
+            f"""
+[S3 DISABLED SAFELY]
+File not found locally: {file_name}
 
-            s3 = boto3.client("s3", region_name=region)
+AWS is NOT configured properly:
+- S3_BUCKET = {S3_BUCKET}
+- AWS_REGION = {S3_REGION}
 
-            response = s3.get_object(Bucket=bucket, Key=key)
-            data = response["Body"].read()
+Fix: Add file locally OR configure real AWS credentials.
+"""
+        )
 
-            df = pd.read_csv(io.BytesIO(data))
+    # ⚠️ STEP 3: Real S3 fallback (ONLY if valid config exists)
+    try:
+        import boto3
 
-            safe_log("SUCCESS: S3 data loaded")
-            return df
+        s3 = boto3.client("s3", region_name=S3_REGION)
+        obj = s3.get_object(Bucket=S3_BUCKET, Key=file_name)
 
-        except botocore.exceptions.EndpointConnectionError as e:
-            safe_log(f"Endpoint unreachable (attempt {attempt})")
-            safe_log(str(e))
-            time.sleep(2)
+        content = obj["Body"].read().decode("utf-8").splitlines()
+        return list(csv.DictReader(content))
 
-        except botocore.exceptions.NoCredentialsError:
-            safe_log("AWS credentials missing")
-            break
-
-        except Exception as e:
-            safe_log(f"General S3 error: {str(e)}")
-            time.sleep(1)
-
-    # =========================================================
-    # FALLBACK SYSTEM (CRITICAL FOR CI STABILITY)
-    # =========================================================
-    if use_fallback:
-        safe_log("USING FALLBACK DATASET (PIPELINE CONTINUES)")
-        return FALLBACK_DATA
-
-    raise Exception("S3 LOAD FAILED - NO FALLBACK ENABLED")
+    except Exception as e:
+        raise Exception(f"S3 load failed: {str(e)}")
 
 
-# =========================================================
-# OPTIONAL WRAPPER FOR PIPELINE USE
-# =========================================================
-
-def get_data():
+def load_keywords():
     """
-    Replace your current direct S3 call with this.
+    Your system likely uses batch_1.csv
     """
-    bucket = os.getenv("S3_BUCKET", "INVALID_BUCKET")
-    key = os.getenv("S3_KEY", "batch_1.csv")
-    region = os.getenv("AWS_REGION", "us-east-1")
-
-    return load_s3_csv(bucket, key, region)
-
-
-# =========================================================
-# TEST RUN
-# =========================================================
-
-if __name__ == "__main__":
-    df = get_data()
-    print(df.head())
+    return load_csv("batch_1.csv")
