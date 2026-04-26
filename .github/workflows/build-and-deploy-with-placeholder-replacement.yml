@@ -1,0 +1,38 @@
+name: Build and Deploy with Placeholder Replacement
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  replace-placeholders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up environment variables
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> $GITHUB_ENV
+
+      - name: Replace placeholders in YAML files
+        run: |
+          find . -name "*.yml" -exec sed -i 's/{{AWS_ACCESS_KEY_ID}}/${{ secrets.AWS_ACCESS_KEY_ID }}/g' {} \;
+          find . -name "*.yml" -exec sed -i 's/{{AWS_SECRET_ACCESS_KEY}}/${{ secrets.AWS_SECRET_ACCESS_KEY }}/g' {} \;
+          find . -name "*.yml" -exec sed -i 's/{{S3_BUCKET_NAME}}/${{ secrets.S3_BUCKET_NAME }}/g' {} \;
+
+      - name: Debug replaced files
+        run: |
+          cat **/*.yml
+
+      - name: Run your deployment or build tasks here
+        run: |
+          # Add any commands that use the updated YAML files
+          echo "Running deployment script"
