@@ -1,32 +1,22 @@
-import os
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import EndpointConnectionError
 
-BUCKET_NAME = os.getenv("S3_BUCKET")
-FILE_KEY = os.getenv("S3_FILE_KEY", "batch_1.csv")
-REGION = os.getenv("AWS_REGION", "us-east-1")
+# Replace with your actual S3 bucket name and region
+bucket_name = 'your-s3-bucket-name'  # Your actual bucket name here
+region_name = 'your-region'  # Your actual region here, e.g., 'us-east-1'
 
+# Initialize the S3 client with the correct region
+s3_client = boto3.client('s3', region_name=region_name)
 
-def download_file():
-    if not BUCKET_NAME:
-        raise ValueError("Missing S3_BUCKET environment variable")
+# Path to your file (e.g., 'batch_1.csv')
+file_path = 'batch_1.csv'  # Local file you want to upload to S3
+key = 'batch_1.csv'  # Name in the S3 bucket
 
-    s3 = boto3.client("s3", region_name=REGION)
-
-    try:
-        print(f"Downloading s3://{BUCKET_NAME}/{FILE_KEY}...")
-        s3.download_file(BUCKET_NAME, FILE_KEY, FILE_KEY)
-        print("Download complete.")
-    except ClientError as e:
-        raise RuntimeError(f"Failed to download file: {e}")
-
-
-def main():
-    download_file()
-
-    # TODO: your article generation logic here
-    print("Process complete.")
-
-
-if __name__ == "__main__":
-    main()
+try:
+    # Attempt to upload the file to the S3 bucket
+    s3_client.upload_file(file_path, bucket_name, key)
+    print(f"File {file_path} uploaded successfully to {bucket_name}/{key}")
+except EndpointConnectionError as e:
+    print(f"Failed to connect to the endpoint: {e}")
+except Exception as e:
+    print(f"An error occurred: {e}")
