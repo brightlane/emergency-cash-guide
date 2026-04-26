@@ -28,9 +28,18 @@ jobs:
           find . -name "*.yml" -exec sed -i 's/{{AWS_SECRET_ACCESS_KEY}}/${{ secrets.AWS_SECRET_ACCESS_KEY }}/g' {} \;
           find . -name "*.yml" -exec sed -i 's/{{S3_BUCKET_NAME}}/${{ secrets.S3_BUCKET_NAME }}/g' {} \;
 
-      - name: Debug replaced files
+      - name: Debug replaced files (list .yml files)
         run: |
-          cat **/*.yml
+          # List all .yml files to ensure they're present
+          find . -name "*.yml"
+
+      - name: Debug replaced files (cat content of each .yml)
+        run: |
+          # Display the content of the files, if any exist
+          for file in $(find . -name "*.yml"); do
+            echo "Showing contents of $file"
+            cat $file
+          done
 
       - name: Run your deployment or build tasks here
         run: |
